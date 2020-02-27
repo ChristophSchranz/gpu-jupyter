@@ -41,4 +41,3 @@ else
 fi
 
 . /usr/local/bin/start.sh $NOTEBOOK_BIN $NOTEBOOK_ARGS "$@"
-

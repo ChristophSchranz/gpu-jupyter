@@ -9,11 +9,11 @@ export STACKS_DIR=".build/docker-stacks"
 # Clone if docker-stacks doesn't exist, and pull.
 ls $STACKS_DIR/README.md  > /dev/null 2>&1  || (echo "Docker-stacks was not found, cloning repository" \
  && git clone https://github.com/jupyter/docker-stacks.git $STACKS_DIR)
-git pull -f $STACKS_DIR
+cd $STACKS_DIR && git pull && cd -
+
 
 # Write the contents into the DOCKERFILE and start with the header
 cat src/Dockerfile.header > $DOCKERFILE
-cp src/jupyter_notebook_config.json .build/
 
 echo "
 ############################################################################
@@ -21,11 +21,14 @@ echo "
 ############################################################################
 " >> $DOCKERFILE
 cat $STACKS_DIR/base-notebook/Dockerfile | grep -v BASE_CONTAINER >> $DOCKERFILE
-cp $STACKS_DIR/base-notebook/fix-permissions .build/
+
+# copy files that are used during the build:
 cp $STACKS_DIR/base-notebook/jupyter_notebook_config.py .build/
+cp $STACKS_DIR/base-notebook/fix-permissions .build/
 cp $STACKS_DIR/base-notebook/start.sh .build/
 cp $STACKS_DIR/base-notebook/start-notebook.sh .build/
 cp $STACKS_DIR/base-notebook/start-singleuser.sh .build/
+chmod 755 .build/*
 
 echo "
 ############################################################################
@@ -48,21 +51,15 @@ echo "
 " >> $DOCKERFILE
 cat $STACKS_DIR/datascience-notebook/Dockerfile | grep -v BASE_CONTAINER >> $DOCKERFILE
 
-echo "
-############################################################################
-################ Dependency: jupyter/tensorflow-notebook ###################
-############################################################################
-" >> $DOCKERFILE
-cat $STACKS_DIR/tensorflow-notebook/Dockerfile | grep -v BASE_CONTAINER >> $DOCKERFILE
 
 # Note that the following step also installs the cudatoolkit, which is
 # essential to access the GPU.
 echo "
 ############################################################################
-########################## Dependency: pytorch #############################
+########################## Dependency: gpulibs #############################
 ############################################################################
 " >> $DOCKERFILE
-cat src/Dockerfile.pytorch >> $DOCKERFILE
+cat src/Dockerfile.gpulibs >> $DOCKERFILE
 
 
 echo "
@@ -72,6 +69,17 @@ echo "
 " >> $DOCKERFILE
 cat src/Dockerfile.usefulpackages >> $DOCKERFILE
 
-cp $DOCKERFILE Dockerfile
-echo "GPU Dockerfile was generated sucessfully in file $(pwd)/${DOCKERFILE} and copied to ./Dockerfile"
+# Copy the demo notebooks and change permissions
+cp -r extra/Getting_Started data
+chmod -R 755 data/
+
+# Copying config
+cp src/jupyter_notebook_config.json .build/
+echo >> $DOCKERFILE
+echo "# Copy jupyter_notebook_config.json" >> $DOCKERFILE
+echo "COPY jupyter_notebook_config.json /etc/jupyter/"  >> $DOCKERFILE
+
+#cp $(find $(dirname $DOCKERFILE) -type f | grep -v $STACKS_DIR | grep -v .gitkeep) .
+
+echo "GPU Dockerfile was generated sucessfully in file ${DOCKERFILE}."
 echo "Run 'bash run_Dockerfile.sh -p [PORT]' to start the GPU-based Juyterlab instance."

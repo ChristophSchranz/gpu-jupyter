@@ -1,6 +1,8 @@
 # Use NVIDIA CUDA as base image and run the same installation as in the other packages.
+# The version of cudatoolkit must match those of the base image, see Dockerfile.pytorch
 FROM nvidia/cuda:10.1-base-ubuntu18.04
-LABEL maintainer="Jupyter Project <jupyter@googlegroups.com>"
+LABEL maintainer="Christoph Schranz <christoph.schranz@salzburgresearch.at>"
+# The maintainers of subsequent sections may vary
 
 ############################################################################
 #################### Dependency: jupyter/base-image ########################
@@ -352,23 +354,18 @@ RUN julia -e 'import Pkg; Pkg.update()' && \
     fix-permissions $JULIA_PKGDIR $CONDA_DIR/share/jupyter
 
 ############################################################################
-################ Dependency: jupyter/tensorflow-notebook ###################
+########################## Dependency: gpulibs #############################
 ############################################################################
 
-# Copyright (c) Jupyter Development Team.
-# Distributed under the terms of the Modified BSD License.
-
-LABEL maintainer="Jupyter Project <jupyter@googlegroups.com>"
+LABEL maintainer="Christoph Schranz <christoph.schranz@salzburgresearch.at>"
 
 # Install Tensorflow
-RUN pip install --quiet \
-    'tensorflow==2.1.0' && \
+RUN conda install --quiet --yes \
+    'tensorflow=1.13*' \
+    'keras=2.2*' && \
+    conda clean --all -f -y && \
     fix-permissions $CONDA_DIR && \
     fix-permissions /home/$NB_USER
-
-############################################################################
-########################## Dependency: pytorch #############################
-############################################################################
 
 # Install PyTorch dependencies
 RUN conda install --quiet --yes \
@@ -377,7 +374,7 @@ RUN conda install --quiet --yes \
     fix-permissions $CONDA_DIR && \
     fix-permissions /home/$NB_USER
 
-# Install PyTorch
+# Install PyTorch, version of cudatoolkit must match those of the base image
 RUN conda install -y -c pytorch \
     cudatoolkit=10.1 \
     'pytorch=1.3.1' \
@@ -390,10 +387,18 @@ RUN conda install -y -c pytorch \
 ############################ Useful packages ###############################
 ############################################################################
 
+LABEL maintainer="Christoph Schranz <christoph.schranz@salzburgresearch.at>"
+
 # Update conda
 RUN conda update -n base conda -y
 
 USER root
+
+# Install elasticsearch libs
+USER root
+RUN apt-get update \
+ && curl -sL https://repo1.maven.org/maven2/org/elasticsearch/elasticsearch-hadoop/6.8.1/elasticsearch-hadoop-6.8.1.jar
+RUN pip install --no-cache-dir elasticsearch==7.1.0
 
 # Install rpy2 to share data between Python and R
 RUN conda install rpy2=2.9.4 plotly=4.4.1
@@ -424,9 +429,10 @@ RUN conda install -c conda-forge jupyter_contrib_nbextensions && \
   jupyter nbextension enable codefolding/main
 RUN jupyter labextension install @ijmbarr/jupyterlab_spellchecker
 
-# Copying config and fix permissions
-COPY jupyter_notebook_config.json /etc/jupyter/
 RUN fix-permissions /home/$NB_USER
 
 # Switch back to jovyan to avoid accidental container runs as root
 USER $NB_UID
+
+# Copy jupyter_notebook_config.json
+COPY jupyter_notebook_config.json /etc/jupyter/

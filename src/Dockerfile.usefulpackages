@@ -1,7 +1,15 @@
+LABEL maintainer="Christoph Schranz <christoph.schranz@salzburgresearch.at>"
+
 # Update conda
 RUN conda update -n base conda -y
 
 USER root
+
+# Install elasticsearch libs
+USER root
+RUN apt-get update \
+ && curl -sL https://repo1.maven.org/maven2/org/elasticsearch/elasticsearch-hadoop/6.8.1/elasticsearch-hadoop-6.8.1.jar
+RUN pip install --no-cache-dir elasticsearch==7.1.0
 
 # Install rpy2 to share data between Python and R
 RUN conda install rpy2=2.9.4 plotly=4.4.1
@@ -32,8 +40,6 @@ RUN conda install -c conda-forge jupyter_contrib_nbextensions && \
   jupyter nbextension enable codefolding/main
 RUN jupyter labextension install @ijmbarr/jupyterlab_spellchecker
 
-# Copying config and fix permissions
-COPY jupyter_notebook_config.json /etc/jupyter/
 RUN fix-permissions /home/$NB_USER
 
 # Switch back to jovyan to avoid accidental container runs as root
