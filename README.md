@@ -3,11 +3,11 @@
 
 ![Jupyterlab Overview](/extra/jupyterlab-overview.png)
 
-First of all, thanks to [hub.docker.com/u/jupyter](https://hub.docker.com/u/jupyter) 
+First of all, thanks to [docker-stacks](https://github.com/jupyter/docker-stacks) 
 for creating and maintaining a robost  Python, R and Julia toolstack for Data Analytics/Science 
 applications. This project uses the NVIDIA CUDA image as a basis image and installs their 
 toolstack on top of it to enable GPU calculations in the Jupyter notebooks. 
-The image of this repository is available on [Dockerhub](https://hub.docker.com/repository/docker/cschranz/gpu-jupyter).
+The image of this repository is available on [Dockerhub](https://hub.docker.com/r/cschranz/gpu-jupyter).
 
 ## Contents
 
@@ -176,6 +176,8 @@ Then update the config file as shown below and restart the service.
  
 #### Update CUDA to another version
 
+Please check version compatibilities for [CUDA and Pytorch](https://pytorch.org/get-started/locally/)
+ respectively [CUDA and Tensorflow](https://www.tensorflow.org/install/gpu) previously. 
 To update CUDA to another version, change in `Dockerfile.header`
 the line:
 
@@ -194,20 +196,29 @@ Then re-generate and re-run the image, as closer described above:
 
 #### Update Docker-Stack
 
-The [docker-stacks](https://github.com/jupyter/docker-stacks) are used as 
-submodule within `.build/docker-stacks`. To update the generated Dockerfile these run:
+The [docker-stacks](https://github.com/jupyter/docker-stacks) are used as  a
+submodule within `.build/docker-stacks`. Per default, the head of the commit is reset to a commit on which `gpu-jupyter` runs stable. 
+To update the generated Dockerfile to a specific commit, run:
 
 ```bash
-cd .build/docker-stacks/ && git pull && cd -
-./generate_Dockerfile.sh
+./generate_Dockerfile.sh --commit c1c32938438151c7e2a22b5aa338caba2ec01da2
 ```
 
-A new build can last some time and may consume a lot of data.
+To update the generated Dockerfile to the latest commit, run:
+
+```bash
+./generate_Dockerfile.sh --commit latest
+```
+
+A new build can last some time and may consume a lot of data traffic. Note, that the latest version may result in
+a version conflict!
 More info to submodules can be found in
  [this tutorial](https://www.vogella.com/tutorials/GitSubmodules/article.html).
 
 
 ## Issues and Contributing
 
-* Please let us know by [filing a new issue](https://github.com/iot-salzburg/gpu-jupyter/issues/new)
-* You can contribute by opening a [pull request](https://help.github.com/articles/using-pull-requests/)
+This project has the intention to create a robust image for CUDA-based GPU-applications, which is built on top of the [docker-stacks](https://github.com/jupyter/docker-stacks). You are free to help to improve this project, by:
+
+* [filing a new issue](https://github.com/iot-salzburg/gpu-jupyter/issues/new)
+* [open a pull request](https://help.github.com/articles/using-pull-requests/)
